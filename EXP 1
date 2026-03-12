@@ -47,3 +47,7 @@ dfs(0, 0)
 print("Solution Path:")
 for step in path:
     print(step)
+
+
+
+
