@@ -186,3 +186,86 @@ while running:
     clock.tick(8)
 
 pygame.quit()
+
+
+
+
+
+astar.py
+
+
+
+
+
+from queue import PriorityQueue
+
+def heuristic(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+def astar(grid, start, goal):
+
+    open_set = PriorityQueue()
+    open_set.put((0, start))
+
+    came_from = {}
+    g_score = {start: 0}
+
+    while not open_set.empty():
+
+        current = open_set.get()[1]
+
+        if current == goal:
+
+            path = []
+
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+
+            path.reverse()
+            return path
+
+        row, col = current
+
+        neighbors = [
+            (row + 1, col),
+            (row - 1, col),
+            (row, col + 1),
+            (row, col - 1)
+        ]
+
+        for neighbor in neighbors:
+
+            r, c = neighbor
+
+            if not (0 <= r < len(grid) and 0 <= c < len(grid[0])):
+                continue
+
+            if grid[r][c] == 1:
+                continue
+
+            temp_g = g_score[current] + 1
+
+            if neighbor not in g_score or temp_g < g_score[neighbor]:
+
+                came_from[neighbor] = current
+                g_score[neighbor] = temp_g
+
+                f_score = temp_g + heuristic(neighbor, goal)
+
+                open_set.put((f_score, neighbor))
+
+    return []
+
+
+
+
+
+
+
+
+
+
+
+
+
