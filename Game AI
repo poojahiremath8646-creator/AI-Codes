@@ -1,0 +1,188 @@
+import pygame
+import random
+import time
+from astar import astar
+
+pygame.init()
+
+# SCREEN
+WIDTH, HEIGHT = 600, 600
+ROWS = 20
+CELL = WIDTH // ROWS
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Robot Exploration Game")
+
+font = pygame.font.Font(None, 30)
+
+# COLORS
+WHITE = (255,255,255)
+GRID = (80,80,120)
+BG = (20,20,40)
+ROBOT_COLOR = (0,255,0)
+GOAL_COLOR = (255,0,0)
+OBSTACLE = (120,120,120)
+PATH_COLOR = (0,120,255)
+RED = (255,80,80)
+YELLOW = (255,255,0)
+
+# GAME STATE
+start = (0,0)
+robot = start
+robot_index = 0
+
+AUTO_MODE = True
+
+TIME_LIMIT = 30
+start_time = time.time()
+
+clock = pygame.time.Clock()
+
+# OBSTACLES
+obstacles = [
+    (5,5),(5,6),(5,7),
+    (10,10),(10,11),(10,12),
+    (15,8),(15,9)
+]
+
+grid = [[0]*ROWS for _ in range(ROWS)]
+for r,c in obstacles:
+    grid[r][c] = 1
+
+# GOAL
+def new_goal():
+    while True:
+        g = (random.randint(10,19), random.randint(10,19))
+        if g not in obstacles:
+            return g
+
+goal = new_goal()
+
+path = astar(grid, start, goal)
+
+# RESET FUNCTION
+def reset():
+    global robot, robot_index, start_time, goal, path
+
+    robot = start
+    robot_index = 0
+    start_time = time.time()
+
+    goal = new_goal()
+    path = astar(grid, robot, goal)
+
+reset()
+
+running = True
+win = False
+lose = False
+
+while running:
+
+    elapsed = time.time() - start_time
+
+    # TIME OUT
+    if elapsed > TIME_LIMIT and not win:
+        lose = True
+
+    for event in pygame.event.get():
+
+        if event.type == pygame.QUIT:
+            running = False
+
+        if event.type == pygame.KEYDOWN:
+
+            # SWITCH MODE
+            if event.key == pygame.K_SPACE:
+                AUTO_MODE = not AUTO_MODE
+
+            # RESTART
+            if event.key == pygame.K_r:
+                win = False
+                lose = False
+                reset()
+
+            # MANUAL MOVE
+            if not AUTO_MODE and not win and not lose:
+                r,c = robot
+                nr,nc = r,c
+
+                if event.key == pygame.K_UP: nr -= 1
+                if event.key == pygame.K_DOWN: nr += 1
+                if event.key == pygame.K_LEFT: nc -= 1
+                if event.key == pygame.K_RIGHT: nc += 1
+
+                if (0 <= nr < 20 and 0 <= nc < 20 and (nr,nc) not in obstacles):
+                    robot = (nr,nc)
+
+        # ADD OBSTACLE
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            x,y = pygame.mouse.get_pos()
+            r = y // CELL
+            c = x // CELL
+
+            if (r,c) != robot and (r,c) != goal:
+                if (r,c) not in obstacles:
+                    obstacles.append((r,c))
+                    grid[r][c] = 1
+                    path = astar(grid, robot, goal)
+                    robot_index = 0
+
+    # AI MOVE
+    if AUTO_MODE and not win and not lose:
+        if robot_index < len(path):
+            robot = path[robot_index]
+            robot_index += 1
+
+    # WIN CHECK
+    if robot == goal and not win:
+        win = True
+
+    # DRAW
+    screen.fill(BG)
+
+    # GRID
+    for r in range(ROWS):
+        for c in range(ROWS):
+            pygame.draw.rect(screen, GRID,
+                (c*CELL, r*CELL, CELL, CELL), 1)
+
+    # OBSTACLES
+    for r,c in obstacles:
+        pygame.draw.rect(screen, OBSTACLE,
+            (c*CELL, r*CELL, CELL, CELL))
+
+    # PATH
+    for r,c in path:
+        pygame.draw.rect(screen, PATH_COLOR,
+            (c*CELL, r*CELL, CELL, CELL))
+
+    # GOAL
+    pygame.draw.circle(screen, GOAL_COLOR,
+        (goal[1]*CELL + CELL//2, goal[0]*CELL + CELL//2),
+        CELL//3)
+
+    # ROBOT
+    pygame.draw.circle(screen, ROBOT_COLOR,
+        (robot[1]*CELL + CELL//2, robot[0]*CELL + CELL//2),
+        CELL//3)
+
+    # UI TEXT
+    mode_text = "AI MODE" if AUTO_MODE else "MANUAL MODE"
+    screen.blit(font.render(mode_text, True, WHITE), (10,10))
+
+    screen.blit(font.render(f"Time: {int(elapsed)}/{TIME_LIMIT}s", True, WHITE), (10,40))
+
+    screen.blit(font.render("SPACE=MODE  R=RESTART", True, YELLOW), (10,70))
+
+    # STATUS
+    if win:
+        screen.blit(font.render("🏆 MISSION COMPLETE", True, YELLOW), (10,120))
+
+    if lose:
+        screen.blit(font.render("😵 TIME UP - YOU LOST", True, RED), (10,150))
+
+    pygame.display.flip()
+    clock.tick(8)
+
+pygame.quit()
