@@ -1,0 +1,10 @@
+#swap two interger numbers without temporary veriable
+
+a =20 
+b =40
+print(f"before swap a={a},b={b}")
+
+#direct swap
+a,b=b,a
+
+print(f"After swap a={a}, b={b}")
