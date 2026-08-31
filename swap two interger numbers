@@ -1,0 +1,13 @@
+#Write a python program to swap two interger numbers
+a=int(input("Enter a:"))
+b=int(input("Enter b:"))
+temp=c
+#before swap
+print("value of a=",a)
+print("value of b=",b)
+#after swap
+temp=a
+a=b
+b=temp
+print("value of a=",a)
+print("value of b=",b)
